@@ -16,7 +16,11 @@ const PORT = process.env.PORT || 5000;
 app.use(
   cors({
     credentials: true,
-    origin: ["*", "http://localhost:3000"],
+    origin: [
+      "*",
+      "http://localhost:3000",
+      "https://devmonitoring.skyparking.online",
+    ],
   })
 );
 
