@@ -1,0 +1,24 @@
+POST http://localhost:5002/v01/monitoring-voucher/api/login
+Content-Type: application/json
+
+{
+    "identifier":"v3@gmail.comn",
+    "password":"sky123",
+    "rememberMe":true
+}
+
+###getAll users
+GET http://localhost:5002/v01/monitoring-voucher/api/get-all
+Content-Type: application/json
+
+###getAll users
+GET http://localhost:5002/v01/monitoring-voucher/api/getuserbyId
+Content-Type: application/json
+
+###getAll users
+GET http://localhost:5002/v01/monitoring-voucher/api/logout
+Content-Type: application/json
+
+###getAll users
+GET http://localhost:5002/v01/monitoring-voucher/api/protected
+Content-Type: application/json

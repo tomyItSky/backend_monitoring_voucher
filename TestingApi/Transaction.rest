@@ -1,0 +1,7 @@
+###Inquiry transaction
+GET http://localhost:5002/v01/transaction-parking/api/transactions/getInquiry
+Content-Type: application/json
+
+###Payment Confirmation
+GET http://localhost:5002/v01/transaction-parking/api/transactions/paymentConfirmation
+Content-Type: application/json

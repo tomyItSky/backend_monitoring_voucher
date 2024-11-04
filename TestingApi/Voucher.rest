@@ -1,0 +1,23 @@
+###getAllInquiry
+GET http://localhost:5002/v01/monitoring-voucher/api/vouchers/inquiry
+Content-Type: application/json
+
+###getAllInquiryMapping
+GET http://localhost:5002/v01/monitoring-voucher/api/vouchers/inquiry/mapping
+Content-Type: application/json
+
+###getAllRedemption
+GET http://localhost:5002/v01/monitoring-voucher/api/vouchers/redemption
+Content-Type: application/json
+
+###getAllRedemptionMapping
+GET http://localhost:5002/v01/monitoring-voucher/api/vouchers/redemption-mapping
+Content-Type: application/json
+
+###getAllUsage
+GET http://localhost:5002/v01/monitoring-voucher/api/vouchers/usage
+Content-Type: application/json
+
+###getAllUsageMapping
+GET http://localhost:5002/v01/monitoring-voucher/api/vouchers/usage-mapping
+Content-Type: application/json

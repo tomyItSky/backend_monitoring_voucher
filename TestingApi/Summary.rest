@@ -1,0 +1,3 @@
+###summary data
+GET http://localhost:5002/v01/summary/api/getSummary
+Content-Type: application/json
