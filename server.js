@@ -26,6 +26,7 @@ app.use(
 
 app.use(cookieParser());
 app.use(bodyParser.json());
+app.set("trust proxy", true);
 
 app.use("/v01/monitoring-voucher/api", users);
 app.use("/v01/monitoring-voucher/api", InquiryTicket);

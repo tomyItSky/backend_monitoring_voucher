@@ -2,6 +2,8 @@ import { Users } from "../model/Users.js";
 import jwt from "jsonwebtoken";
 import { Op } from "sequelize";
 import { SetupRole } from "../model/SetupRole.js";
+import bcrypt from "bcryptjs";
+import generateUserCode from "../utils/GenerateCode.js";
 
 const signToken = (user, rememberMe) => {
   const expiresIn = rememberMe ? "30d" : "1d";
@@ -31,6 +33,71 @@ const createSendToken = (user, statusCode, res, rememberMe) => {
     token,
     message: "Login Successful",
   });
+};
+
+export const CreateUsers = async (req, res) => {
+  try {
+    const userById = await Users.findByPk(req.userId);
+    const { SetupRoleId, Name, Gender, Username, Email, Phone } = req.body;
+    const password = "sky123";
+    let IpAddress = req.headers["x-forwarded-for"] || req.ip || "0.0.0.0";
+
+    if (IpAddress.includes("::ffff:")) {
+      IpAddress = IpAddress.split("::ffff:")[1];
+    }
+    console.log(IpAddress);
+    // Hash password
+    const salt = await bcrypt.genSalt();
+    const hashPassword = await bcrypt.hash(password, salt);
+
+    const currentDate = new Date();
+    const oneYearLater = new Date(
+      currentDate.getFullYear() + 1,
+      currentDate.getMonth(),
+      currentDate.getDate()
+    );
+
+    const lastUsers = await Users.findOne({
+      order: [["Id", "DESC"]],
+    });
+
+    const lastId = lastUsers ? lastUsers.Id : 0;
+    const userCode = await generateUserCode(lastId);
+
+    // Create new user
+    const newUser = await Users.create({
+      SetupRoleId,
+      IpAddress: IpAddress,
+      UserCode: userCode,
+      Name,
+      Gender,
+      Username,
+      Email,
+      Phone,
+      Password: hashPassword,
+      PasswordExpired: oneYearLater,
+      MerchantId: 0,
+      IsFirstpassword: 1,
+      FlagAllLocation: 1,
+      CreatedOn: new Date(),
+      CreatedBy: userById.Name,
+      UpdatedOn: new Date(),
+      UserStatus: 1,
+    });
+
+    return res.status(201).json({
+      status: "success",
+      message: "User successfully created",
+      data: newUser,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      status: "fail",
+      message: "Error creating user",
+      error: error.message,
+    });
+  }
 };
 
 export const login = async (req, res) => {
@@ -72,29 +139,59 @@ export const login = async (req, res) => {
 
 export const getAllUsers = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = "" } = req.query; // Default values for pagination and search
+    const { page = 1, limit = 10, search = "", from = "", to = "" } = req.query;
 
-    // Construct the search condition
-    const searchCondition = {
-      [Op.or]: [
-        { Name: { [Op.like]: `%${search}%` } },
-        { Email: { [Op.like]: `%${search}%` } },
-        { Username: { [Op.like]: `%${search}%` } },
-      ],
+    const parsedFrom = from ? new Date(`${from}T00:00:00`) : null;
+    const parsedTo = to ? new Date(`${to}T23:59:59`) : null;
+
+    const searchCondition = search
+      ? {
+          [Op.or]: [
+            { Name: { [Op.like]: `%${search}%` } },
+            { Email: { [Op.like]: `%${search}%` } },
+            { UserCode: { [Op.like]: `%${search}%` } },
+            { Phone: { [Op.like]: `%${search}%` } },
+          ],
+        }
+      : {};
+
+    const dateCondition = {};
+    if (parsedFrom && parsedTo) {
+      dateCondition.CreatedOn = {
+        [Op.between]: [parsedFrom, parsedTo],
+      };
+    } else if (parsedFrom) {
+      dateCondition.CreatedOn = {
+        [Op.gte]: parsedFrom,
+      };
+    } else if (parsedTo) {
+      dateCondition.CreatedOn = {
+        [Op.lte]: parsedTo,
+      };
+    }
+
+    const roleCondition = { SetupRoleId: { [Op.ne]: null } };
+
+    const conditions = {
+      ...(search ? searchCondition : {}),
+      ...dateCondition,
+      ...roleCondition,
     };
 
-    // Pagination logic
-    const offset = (page - 1) * limit;
-
-    // Query the database for users with pagination and search
-    const { rows: users, count: totalItems } = await Users.findAndCountAll({
-      where: search ? searchCondition : {}, // Apply search if provided
+    const { rows: UsersData, count: totalItems } = await Users.findAndCountAll({
+      where: conditions,
+      include: [
+        {
+          model: SetupRole,
+          attributes: ["Name"],
+        },
+      ],
       limit: parseInt(limit),
-      offset: parseInt(offset),
-      include: [{ model: SetupRole, as: "Role" }], // Include the Role details
+      offset: (page - 1) * limit,
+      order: [["LastActivity", "DESC"]],
+      include: [{ model: SetupRole, as: "Role" }],
     });
 
-    // Calculate total pages
     const totalPages = Math.ceil(totalItems / limit);
 
     return res.json({
@@ -102,11 +199,34 @@ export const getAllUsers = async (req, res) => {
       totalItems,
       totalPages,
       currentPage: parseInt(page),
-      data: users,
+      UsersData,
     });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ status: "fail", message: "Server Error" });
+  }
+};
+
+export const getAllRoles = async (req, res) => {
+  try {
+    const activeRoles = await SetupRole.findAll({
+      where: {
+        RecordStatus: 1,
+      },
+      order: [["UpdatedOn", "ASC"]],
+    });
+
+    if (activeRoles.length === 0) {
+      return res.status(404).json({ message: "No roles found." });
+    }
+
+    return res.json({
+      status: "success",
+      data: activeRoles,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Server error" });
   }
 };
 

@@ -4,13 +4,17 @@ import {
   getAllUsers,
   logout,
   getUserById,
+  CreateUsers,
+  getAllRoles,
 } from "../../controller/AuthController.js";
 import { protectAuth } from "../../middleware/authMidOcc.js";
 
 const router = express.Router();
 
 router.post("/login", login);
+router.post("/create-user", protectAuth, CreateUsers);
 router.get("/get-all", getAllUsers);
+router.get("/getrole-all", getAllRoles);
 router.get("/getuserbyId", protectAuth, getUserById);
 router.get("/logout", logout);
 
